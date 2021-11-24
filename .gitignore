@@ -1,0 +1,13 @@
+
+# dataset
+data/
+/data
+
+temp/
+/temp
+
+work_dirs/
+/work_dirs
+
+__init__.py
+__pycache__.py
