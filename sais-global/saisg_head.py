@@ -90,7 +90,7 @@ class SAISGHead(FCOSHead):
                 bbox_pred *= stride
         else:
             bbox_pred = bbox_pred.exp()
-        return cls_score, bbox_pred, centerness, coefficients
+        return cls_score, bbox_pred, centerness, coefficients, reg_feat
 
     @force_fp32(apply_to=('cls_scores', 'bbox_preds', 'centernesses'))
     def loss(self,
@@ -608,16 +608,15 @@ class SAISGProtonet(BaseModule):
         # (None,-2) -> bilinear interpolate
         in_channels = self.in_channels
         protonets = ModuleList()
+
         for num_channels, kernel_size in zip(self.proto_channels,
                                              self.proto_kernel_sizes):
-            layer_norm = None
             if kernel_size > 0:
                 layer = nn.Conv2d(
                     in_channels,
                     num_channels,
                     kernel_size,
                     padding=kernel_size // 2)
-                layer_norm = nn.GroupNorm(32, num_channels)
             else:
                 if num_channels is None:
                     layer = InterpolateModule(
@@ -631,13 +630,12 @@ class SAISGProtonet(BaseModule):
                         -kernel_size,
                         padding=kernel_size // 2)
             protonets.append(layer)
-            if layer_norm is not None:
-                protonets.append(layer_norm)
             protonets.append(nn.ReLU(inplace=True))
             in_channels = num_channels if num_channels is not None \
                 else in_channels
         if not self.include_last_relu:
             protonets = protonets[:-1]
+        protonets.append(InterpolateModule(scale_factor=4, mode='bilinear', align_corners=False))
         return nn.Sequential(*protonets)
 
     def init_weights(self):
@@ -795,7 +793,7 @@ class SAISGProtonet(BaseModule):
             total_pos += 1  # avoid nan
         loss_mask = [x / total_pos for x in loss_mask]
 
-        return dict(loss_mask=loss_mask)
+        return dict(loss_global_mask=loss_mask)
 
     def get_targets(self, mask_pred, gt_masks, pos_assigned_gt_inds):
         """Compute instance segmentation targets for each image.

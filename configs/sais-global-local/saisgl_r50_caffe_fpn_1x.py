@@ -3,7 +3,7 @@ _base_ = [
 ]
 # model settings
 model = dict(
-    type='SAISG',
+    type='SAISGL',
     backbone=dict(
         type='ResNet',
         depth=50,
@@ -55,6 +55,14 @@ model = dict(
         num_classes=80,
         max_masks_to_train=100,
         loss_mask_weight=1.),
+    roi_mask_head=dict(
+        type='FCNMaskHead',
+        num_convs=4,
+        in_channels=256,
+        conv_out_channels=256,
+        num_classes=80,
+        loss_mask=dict(
+            type='CrossEntropyLoss', use_mask=True, loss_weight=1.0)),
     # training and testing settings
     train_cfg=dict(
         assigner=dict(
@@ -65,11 +73,13 @@ model = dict(
             ignore_iof_thr=-1),
         allowed_border=-1,
         pos_weight=-1,
-        debug=False),
+        debug=False,
+        mask_size=28),
     test_cfg=dict(
         nms_pre=1000,
         min_bbox_size=0,
         score_thr=0.05,
+        mask_thr_binary=0.5,
         nms=dict(type='nms', iou_threshold=0.5),
         max_per_img=100))
 
@@ -118,7 +128,7 @@ test_pipeline = [
 
 data = dict(
     samples_per_gpu=32,
-    workers_per_gpu=2,
+    workers_per_gpu=4,
     train=dict(
         type=dataset_type,
         ann_file=data_root + 'annotations/instances_train2017.json',
@@ -154,6 +164,8 @@ runner = dict(type='EpochBasedRunner', max_epochs=12)
 custom_imports = dict(
     imports=[
         'sais-global.saisg',
-        'sais-global.saisg_head'
+        'sais-global.saisg_head',
+        'sais-global-local.saisgl',
+        'sais-local.saisl_head'
     ],
     allow_failed_imports=False)
