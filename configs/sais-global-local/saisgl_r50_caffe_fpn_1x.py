@@ -49,8 +49,8 @@ model = dict(
     mask_head=dict(
         type='SAISGProtonet',
         in_channels=256*3,
-        proto_channels=(256, 32),
-        proto_kernel_sizes=(3, 1),
+        proto_channels=(256, 256, 32),
+        proto_kernel_sizes=(3, 3, 1),
         num_protos=32,
         num_classes=80,
         max_masks_to_train=100,
@@ -128,7 +128,7 @@ test_pipeline = [
 
 data = dict(
     samples_per_gpu=32,
-    workers_per_gpu=4,
+    workers_per_gpu=8,
     train=dict(
         type=dataset_type,
         ann_file=data_root + 'annotations/instances_train2017.json',
@@ -166,6 +166,8 @@ custom_imports = dict(
         'sais-global.saisg',
         'sais-global.saisg_head',
         'sais-global-local.saisgl',
-        'sais-local.saisl_head'
+        'sais-local.saisl_head',
+        'sais-global-local.fcn_mask_head_share',
+        'sais-global-local.saisgl-share'
     ],
     allow_failed_imports=False)

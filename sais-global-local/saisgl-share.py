@@ -9,7 +9,7 @@ import torch.nn.functional as F
 from mmcv.ops import RoIAlign
 
 @DETECTORS.register_module()
-class SAISGL(SingleStageDetector):
+class SAISGLS(SingleStageDetector):
 
     def __init__(self,
                  backbone,
@@ -22,7 +22,7 @@ class SAISGL(SingleStageDetector):
                  test_cfg=None,
                  pretrained=None,
                  init_cfg=None):
-        super(SAISGL, self).__init__(backbone, neck, bbox_head, train_cfg,
+        super(SAISGLS, self).__init__(backbone, neck, bbox_head, train_cfg,
                                      test_cfg, pretrained, init_cfg)
         if segm_head is not None:
             self.segm_head = build_head(segm_head)
@@ -48,26 +48,6 @@ class SAISGL(SingleStageDetector):
                       gt_labels,
                       gt_bboxes_ignore=None,
                       gt_masks=None):
-        """
-        Args:
-            img (Tensor): of shape (N, C, H, W) encoding input images.
-                Typically these should be mean centered and std scaled.
-            img_metas (list[dict]): list of image info dict where each dict
-                has: 'img_shape', 'scale_factor', 'flip', and may also contain
-                'filename', 'ori_shape', 'pad_shape', and 'img_norm_cfg'.
-                For details on the values of these keys see
-                `mmdet/datasets/pipelines/formatting.py:Collect`.
-            gt_bboxes (list[Tensor]): Ground truth bboxes for each image with
-                shape (num_gts, 4) in [tl_x, tl_y, br_x, br_y] format.
-            gt_labels (list[Tensor]): class indices corresponding to each box
-            gt_bboxes_ignore (None | list[Tensor]): specify which bounding
-                boxes can be ignored when computing the loss.
-            gt_masks (None | Tensor) : true segmentation masks for each box
-                used if the architecture supports a segmentation task.
-
-        Returns:
-            dict[str, Tensor]: a dictionary of loss components
-        """
         # convert Bitmap mask or Polygon Mask to Tensor here
         gt_seg_masks = [
             gt_mask.to_tensor(dtype=torch.uint8, device=img.device)
@@ -81,17 +61,6 @@ class SAISGL(SingleStageDetector):
                                                           img_metas)
         losses, sampling_results = self.bbox_head.loss(
             *bbox_head_loss_inputs, gt_bboxes_ignore=gt_bboxes_ignore)
-
-        feat_masks = []
-        for i, feat in enumerate(reg_feat):
-            if i < 3:
-                if i == 0:
-                    feat_masks.append(feat)
-                else:
-                    feat_up = F.interpolate(feat, scale_factor=(2 ** i), mode='bilinear',
-                                            align_corners=False)
-                    feat_masks.append(feat_up)
-        feat_masks = torch.cat(feat_masks, dim=1)
 
         if self.segm_head is not None:
             segm_head_outs = self.segm_head(x[0])
@@ -114,6 +83,19 @@ class SAISGL(SingleStageDetector):
             roi_loss_mask = self.roi_mask_head.loss(mask_preds, mask_targets, torch.cat(gt_labels))
             losses.update(roi_loss_mask)
 
+            feat_masks = self.roi_mask_head(x[0], use_roi_feat=False)
+        else:
+            feat_masks = []
+            for i, feat in enumerate(reg_feat):
+                if i < 3:
+                    if i == 0:
+                        feat_masks.append(feat)
+                    else:
+                        feat_up = F.interpolate(feat, scale_factor=(2 ** i), mode='bilinear',
+                                                align_corners=False)
+                        feat_masks.append(feat_up)
+            feat_masks = torch.cat(feat_masks, dim=1)
+
         mask_pred = self.mask_head(feat_masks, coeff_pred, gt_bboxes, img_metas,
                                    sampling_results)
         loss_mask = self.mask_head.loss(mask_pred, gt_seg_masks, gt_bboxes,
@@ -132,17 +114,19 @@ class SAISGL(SingleStageDetector):
             for det_bbox, det_label, _ in result_list
         ]
 
-
-        feat_masks = []
-        for i, feat in enumerate(reg_feats):
-            if i < 3:
-                if i == 0:
-                    feat_masks.append(feat)
-                else:
-                    feat_up = F.interpolate(feat, scale_factor=(2 ** i), mode='bilinear',
-                                            align_corners=False)
-                    feat_masks.append(feat_up)
-        feat_masks = torch.cat(feat_masks, dim=1)
+        if self.roi_mask_head is not None:
+            feat_masks = self.roi_mask_head(feats[0], use_roi_feat=False)
+        else:
+            feat_masks = []
+            for i, feat in enumerate(reg_feats):
+                if i < 3:
+                    if i == 0:
+                        feat_masks.append(feat)
+                    else:
+                        feat_up = F.interpolate(feat, scale_factor=(2 ** i), mode='bilinear',
+                                                align_corners=False)
+                        feat_masks.append(feat_up)
+            feat_masks = torch.cat(feat_masks, dim=1)
 
         segm_results = self.mask_head.simple_test(
             [feat_masks],
