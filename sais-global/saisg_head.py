@@ -582,6 +582,7 @@ class SAISGProtonet(BaseModule):
                  num_protos=32,
                  loss_mask_weight=1.0,
                  max_masks_to_train=100,
+                 up_scale=4,
                  init_cfg=dict(
                      type='Xavier',
                      distribution='uniform',
@@ -591,6 +592,7 @@ class SAISGProtonet(BaseModule):
         self.proto_channels = proto_channels
         self.proto_kernel_sizes = proto_kernel_sizes
         self.include_last_relu = include_last_relu
+        self.up_scale = up_scale
         self.protonet = self._init_layers()
 
         self.loss_mask_weight = loss_mask_weight
@@ -635,7 +637,8 @@ class SAISGProtonet(BaseModule):
                 else in_channels
         if not self.include_last_relu:
             protonets = protonets[:-1]
-        protonets.append(InterpolateModule(scale_factor=4, mode='bilinear', align_corners=False))
+        protonets.append(InterpolateModule(scale_factor=self.up_scale, mode='bilinear', align_corners=False))
+        protonets.append(nn.ReLU(inplace=True))
         return nn.Sequential(*protonets)
 
     def init_weights(self):

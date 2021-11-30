@@ -9,6 +9,9 @@ temp/
 work_dirs/
 /work_dirs
 
+/tools
+/configs/__base__
+
 __init__.py
-*/__pycacahe__*
+*/__pycache__
 __pycache__.py

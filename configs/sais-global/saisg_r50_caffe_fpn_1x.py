@@ -75,7 +75,7 @@ model = dict(
 
 # dataset settings
 dataset_type = 'CocoDataset'
-data_root = '/data/coco/'
+data_root = 'data/coco/'
 img_norm_cfg = dict(
     mean=[102.9801, 115.9465, 122.7717], std=[1.0, 1.0, 1.0], to_rgb=False)
 train_pipeline = [
@@ -118,7 +118,7 @@ test_pipeline = [
 
 data = dict(
     samples_per_gpu=32,
-    workers_per_gpu=2,
+    workers_per_gpu=8,
     train=dict(
         type=dataset_type,
         ann_file=data_root + 'annotations/instances_train2017.json',
