@@ -10,4 +10,5 @@ work_dirs/
 /work_dirs
 
 __init__.py
+*/__pycacahe__*
 __pycache__.py
