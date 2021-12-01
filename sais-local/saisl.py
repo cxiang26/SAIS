@@ -31,7 +31,9 @@ class SAISL(SingleStageDetector):
     def forward_dummy(self, img):
         feat = self.extract_feat(img)
         bbox_outs = self.bbox_head(feat)
-        prototypes = self.mask_head.forward_dummy(feat[0])
+        bboxes_new = feat[0].new_tensor([0., 1., 1., 30., 30.]).repeat(100, 1)
+        roi_feats = self.roialign(feat[0], bboxes_new)
+        prototypes = self.mask_head.forward_dummy(roi_feats)
         return (bbox_outs, prototypes)
 
     def forward_train(self,

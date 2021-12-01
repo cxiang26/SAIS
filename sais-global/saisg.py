@@ -30,7 +30,17 @@ class SAISG(SingleStageDetector):
     def forward_dummy(self, img):
         feat = self.extract_feat(img)
         bbox_outs = self.bbox_head(feat)
-        prototypes = self.mask_head.forward_dummy(feat[0])
+        feat_masks = []
+        for i, feat in enumerate(bbox_outs[-1]):
+            if i < 3:
+                if i == 0:
+                    feat_masks.append(feat)
+                else:
+                    feat_up = F.interpolate(feat, scale_factor=(2 ** i), mode='bilinear',
+                                            align_corners=False)
+                    feat_masks.append(feat_up)
+        feat_masks = torch.cat(feat_masks, dim=1)
+        prototypes = self.mask_head.forward_dummy(feat_masks)
         return (bbox_outs, prototypes)
 
     def forward_train(self,

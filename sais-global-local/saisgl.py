@@ -111,7 +111,16 @@ class SAISGL(SingleStageDetector):
 
             labels = [l.new_tensor([ii for ii in range(len(l))]) for l in gt_labels]
             mask_targets = mask_target(gt_bboxes, labels, gt_masks, self.train_cfg)
-            roi_loss_mask = self.roi_mask_head.loss(mask_preds, mask_targets, torch.cat(gt_labels))
+
+            # provide supervised information for small objects, ignore large objects
+            h = bboxes[:, 2] - bboxes[:, 0]
+            w = bboxes[:, 3] - bboxes[:, 1]
+            pos_ind = (h < 28) & (w < 28)
+            mask_preds = mask_preds[pos_ind]
+            mask_targets = mask_targets[pos_ind]
+            roi_labels = torch.cat(gt_labels)[pos_ind]
+
+            roi_loss_mask = self.roi_mask_head.loss(mask_preds, mask_targets, roi_labels)
             losses.update(roi_loss_mask)
 
         mask_pred = self.mask_head(feat_masks, coeff_pred, gt_bboxes, img_metas,
