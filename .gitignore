@@ -12,6 +12,7 @@ work_dirs/
 /tools
 /configs/__base__
 
+.idea
 __init__.py
 */__pycache__
 __pycache__.py

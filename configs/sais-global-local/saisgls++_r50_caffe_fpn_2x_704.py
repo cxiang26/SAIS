@@ -23,7 +23,7 @@ model = dict(
         conv_out_channels=256,
         num_classes=80,
         loss_mask=dict(
-            type='CrossEntropyLoss', use_mask=True, loss_weight=0.2)),
+            type='CrossEntropyLoss', use_mask=True, loss_weight=0.5)),
     mask_head=dict(
         type='SAISGProtonet',
         in_channels=256,
@@ -81,8 +81,8 @@ test_pipeline = [
 ]
 
 data = dict(
-    samples_per_gpu=32,
-    workers_per_gpu=8,
+    samples_per_gpu=16,
+    workers_per_gpu=4,
     train=dict(
         type=dataset_type,
         ann_file=data_root + 'annotations/instances_train2017.json',
