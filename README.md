@@ -4,6 +4,11 @@
 
 This is an official release of the paper **SAIS: Single-stage Anchor-free Instance Segmentation**. 
 Global-based and Local-based instance encoding methods are implemented.
+
+
+![pipeline](resources/SAIS-L-G.png)
+
+
 ## Results
 
 ### Instance Segmentation on COCO （FPS including forward and whole post-processing）
@@ -18,6 +23,8 @@ Global-based and Local-based instance encoding methods are implemented.
 | SAIS-G-704  | ResNet-101-FPN | 3x     | 32.8    | 11.1  | 52.6  | 28.6  |
 | SAIS-GL-704 | ResNet-101-FPN | 3x     | 33.0    | 12.2  | 53.0  | 28.6  |
  
+
+![visulization](resources/SAIS-res.png)
 ## Installation
 
 It requires the following OpenMMLab packages:
