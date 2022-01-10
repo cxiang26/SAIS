@@ -38,7 +38,7 @@ class SAISGL(SingleStageDetector):
     def forward_dummy(self, img):
         feat = self.extract_feat(img)
         bbox_outs = self.bbox_head(feat)
-        prototypes = self.mask_head.forward_dummy(feat[0])
+        prototypes = self.mask_head.forward_dummy(torch.cat((feat[0],feat[0],feat[0]),dim=1))
         return (bbox_outs, prototypes)
 
     def forward_train(self,
@@ -104,14 +104,25 @@ class SAISGL(SingleStageDetector):
             idx = np.concatenate([[i] * len(box) for i, box in enumerate(gt_bboxes)])
             bboxes = torch.cat(bboxes, dim=0)
             idx = torch.from_numpy(idx.astype(np.float32)).to(bboxes.device)
+            
             bboxes_new = torch.cat([idx[:,None], bboxes], dim=1)
 
-            roi_feats = self.roialign(x[0], bboxes_new)
+            roi_feats = self.roialign(x[0], bboxes_new) # x[0]
             mask_preds = self.roi_mask_head(roi_feats)
 
             labels = [l.new_tensor([ii for ii in range(len(l))]) for l in gt_labels]
             mask_targets = mask_target(gt_bboxes, labels, gt_masks, self.train_cfg)
-            roi_loss_mask = self.roi_mask_head.loss(mask_preds, mask_targets, torch.cat(gt_labels))
+            
+                        
+            h = bboxes[:, 2] - bboxes[:, 0]
+            w = bboxes[:, 3] - bboxes[:, 1]
+            pos_idx = (h < 24) * (w < 24)
+            mask_preds = mask_preds[pos_idx]
+            mask_targets = mask_targets[pos_idx]
+            roi_labels = torch.cat(gt_labels)[pos_idx]
+            
+            roi_loss_mask = self.roi_mask_head.loss(mask_preds, mask_targets, roi_labels)
+            
             losses.update(roi_loss_mask)
 
         mask_pred = self.mask_head(feat_masks, coeff_pred, gt_bboxes, img_metas,
