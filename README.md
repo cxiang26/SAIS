@@ -22,7 +22,7 @@ Global-based and Local-based instance encoding methods are implemented.
 | SAIS-L-704  | ResNet-101-FPN | 3x     | 33.7    | 14.0  | 52.1  | 26.4  |
 | SAIS-G-704  | ResNet-101-FPN | 3x     | 32.8    | 11.1  | 52.6  | 28.6  |
 | SAIS-GL-704 | ResNet-101-FPN | 3x     | 33.0    | 12.2  | 53.0  | 28.6  |
- 
+| SAIS-GL-704 | PVTv2-B2-FPN   | 6x     | 39.5    | 16.7  | 60.7  | 21.5  |   
 
 ![visulization](resources/SAIS-res.png)
 ## Installation
